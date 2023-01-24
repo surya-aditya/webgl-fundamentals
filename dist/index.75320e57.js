@@ -142,7 +142,7 @@
       this[globalName] = mainExports;
     }
   }
-})({"bKl9i":[function(require,module,exports) {
+})({"dKxsn":[function(require,module,exports) {
 var global = arguments[3];
 var HMR_HOST = null;
 var HMR_PORT = null;
@@ -578,9 +578,6 @@ class App {
         this.setup();
     }
     setup() {
-        this.primitiveType = this.gl.TRIANGLES;
-        this.offset = 0;
-        this.count = 6;
         // Link the two shaders into a program
         this.gl.useProgram(this.program);
         // look up where the vertex data needs to go.
@@ -593,13 +590,9 @@ class App {
         // Create a buffer and put three 2d clip space points in it
         this.positionBuffer = this.gl.createBuffer();
         this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.positionBuffer);
-        // Set the geometry.
-        this.setGeometry(this.gl);
         // Create a buffer for the colors.
         this.colorBuffer = this.gl.createBuffer();
         this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.colorBuffer);
-        // Set the colors.
-        this.setColors(this.gl);
         // Bind it to ARRAY_BUFFER (think of it as ARRAY_BUFFER = positionBuffer)
         this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.positionBuffer);
         var positions = [
@@ -617,9 +610,18 @@ class App {
             50
         ];
         this.gl.bufferData(this.gl.ARRAY_BUFFER, new Float32Array(positions), this.gl.STATIC_DRAW);
-        this.render();
+        this.translation = [
+            200,
+            150
+        ];
+        this.angleInRadians = 0;
+        this.scale = [
+            1,
+            1
+        ];
+        this.drawScene();
     }
-    render() {
+    drawScene() {
         (0, _webgl.resizeCanvasToDisplaySize)(this.gl.canvas);
         // Tell WebGL how to convert from clip space to pixels
         this.gl.viewport(0, 0, this.gl.canvas.width, this.gl.canvas.height);
@@ -651,20 +653,21 @@ class App {
         this.gl.vertexAttribPointer(this.colorLocation, size, type, normalize, stride, offset);
         // set the resolution
         this.gl.uniform2f(this.resolutionUniformLocation, this.gl.canvas.width, this.gl.canvas.height);
-        let translation = [
-            200,
-            150
-        ];
-        let angleInRadians = 0;
-        let scale = [
-            1,
-            1
-        ];
+        // Compute the matrix
         let matrix = (0, _m3.Projection)(this.canvas.clientWidth, this.canvas.clientHeight);
-        matrix = (0, _m3.Translate)(matrix, translation[0], translation[1]);
-        matrix = (0, _m3.Rotate)(matrix, angleInRadians);
-        matrix = (0, _m3.Scale)(matrix, scale[0], scale[1]);
+        matrix = (0, _m3.Translate)(matrix, this.translation[0], this.translation[1]);
+        matrix = (0, _m3.Rotate)(matrix, this.angleInRadians);
+        matrix = (0, _m3.Scale)(matrix, this.scale[0], this.scale[1]);
+        // Set the matrix.
         this.gl.uniformMatrix3fv(this.matrixLocation, false, matrix);
+        // Draw the geometry.
+        this.primitiveType = this.gl.TRIANGLES;
+        this.offset = 0;
+        this.count = 6;
+        // Set the geometry.
+        this.setGeometry(this.gl);
+        // Set the colors.
+        this.setColors(this.gl);
     }
     setGeometry(gl) {
         gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([
@@ -722,7 +725,7 @@ class App {
 }
 new App();
 
-},{"./utils/webgl":"fXrAk","@parcel/transformer-js/src/esmodule-helpers.js":"ioCqQ","./shaders/vertex.glsl":"lsJIW","./shaders/fragment.glsl":"6zaRz","./utils/webgl/m3":"5hu0d"}],"fXrAk":[function(require,module,exports) {
+},{"./utils/webgl":"fXrAk","@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3","./shaders/vertex.glsl":"lsJIW","./shaders/fragment.glsl":"6zaRz","./utils/webgl/m3":"5hu0d"}],"fXrAk":[function(require,module,exports) {
 /**
  * Create
  */ var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
@@ -803,7 +806,7 @@ function setRectangle(gl, x, y, width, height) {
     ]), gl.STATIC_DRAW);
 }
 
-},{"@parcel/transformer-js/src/esmodule-helpers.js":"ioCqQ"}],"ioCqQ":[function(require,module,exports) {
+},{"@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}],"gkKU3":[function(require,module,exports) {
 exports.interopDefault = function(a) {
     return a && a.__esModule ? a : {
         default: a
@@ -834,10 +837,10 @@ exports.export = function(dest, destName, get) {
 };
 
 },{}],"lsJIW":[function(require,module,exports) {
-module.exports = "#define GLSLIFY 1\n attribute vec2 a_position;\n attribute vec4 a_color;\n \n uniform vec2 u_resolution;\n uniform mat3 u_matrix;\n\n varying vec4 v_color;\n\n  // all shaders have a main function\n  void main() {\n\n    // Multiply the position by the matrix.\n    gl_Position = vec4((u_matrix * vec3(a_position, 1)).xy, 0, 1);\n  \n    // Copy the color from the attribute to the varying.\n    v_color = a_color;\n  }\n";
+module.exports = "#define GLSLIFY 1\nattribute vec2 a_position;\nattribute vec4 a_color;\n\n//  uniform vec2 u_resolution;\nuniform mat3 u_matrix;\n\nvarying vec4 v_color;\n\n// all shaders have a main function\nvoid main() {\n\n  // Multiply the position by the matrix.\n  gl_Position = vec4((u_matrix * vec3(a_position, 1)).xy, 0, 1);\n\n  // Copy the color from the attribute to the varying.\n  v_color = a_color;\n}\n";
 
 },{}],"6zaRz":[function(require,module,exports) {
-module.exports = "precision mediump float;\n#define GLSLIFY 1\n\nuniform vec4 u_color;\n\nvarying vec4 v_color;\n\nvoid main() {\n  // gl_FragColor is a special variable a fragment shader\n  // is responsible for setting\n\n  gl_FragColor = v_color; \n}";
+module.exports = "precision mediump float;\n#define GLSLIFY 1\n\nvarying vec4 v_color;\n\nvoid main() {\n  // gl_FragColor is a special variable a fragment shader\n  // is responsible for setting\n\n  gl_FragColor = v_color; \n}";
 
 },{}],"5hu0d":[function(require,module,exports) {
 var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
@@ -1120,6 +1123,6 @@ function inverse(m, dst) {
     return dst;
 }
 
-},{"@parcel/transformer-js/src/esmodule-helpers.js":"ioCqQ"}]},["bKl9i","jyKRr"], "jyKRr", "parcelRequire94c2")
+},{"@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}]},["dKxsn","jyKRr"], "jyKRr", "parcelRequire94c2")
 
 //# sourceMappingURL=index.75320e57.js.map

@@ -1,8 +1,7 @@
 import {
   createProgram, 
   createShader, 
-  resizeCanvasToDisplaySize, 
-  setRectangle
+  resizeCanvasToDisplaySize
 } from "./utils/webgl"
 
 import {
@@ -23,15 +22,18 @@ class App {
   vertex: WebGLShader
   fragment: WebGLShader
   positionAttributeLocation!: number
-  positionBuffer!: WebGLBuffer
-  resolutionUniformLocation: WebGLUniformLocation | any
-  colorUniformLocation: WebGLUniformLocation | any
-  matrixLocation: WebGLUniformLocation | any
-  colorLocation!: number
-  colorBuffer!: WebGLBuffer | null
-  count: number | any
-  offset: number | any
-  primitiveType: any
+  positionBuffer: WebGLBuffer | undefined
+  resolutionUniformLocation: WebGLUniformLocation | undefined
+  colorUniformLocation: WebGLUniformLocation | undefined
+  matrixLocation: WebGLUniformLocation | undefined
+  colorLocation: number | undefined
+  colorBuffer: WebGLBuffer | undefined
+  count: number | undefined
+  offset: number | undefined
+  primitiveType: undefined
+  translation: number[] | undefined
+  angleInRadians: number | undefined
+  scale: number[] | undefined
 
   constructor() {
     
@@ -51,11 +53,7 @@ class App {
     this.setup()
   }
 
-  setup() {     
-    
-    this.primitiveType = this.gl.TRIANGLES
-    this.offset = 0
-    this.count = 6
+  setup() { 
  
     // Link the two shaders into a program
     this.gl.useProgram(this.program)
@@ -72,14 +70,10 @@ class App {
     // Create a buffer and put three 2d clip space points in it
     this.positionBuffer = <WebGLBuffer> this.gl.createBuffer()
     this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.positionBuffer)
-    // Set the geometry.
-    this.setGeometry(this.gl)
     
     // Create a buffer for the colors.
     this.colorBuffer = <WebGLBuffer> this.gl.createBuffer()
     this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.colorBuffer)
-    // Set the colors.
-    this.setColors(this.gl)
 
     // Bind it to ARRAY_BUFFER (think of it as ARRAY_BUFFER = positionBuffer)
     this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.positionBuffer)
@@ -95,11 +89,14 @@ class App {
 
     this.gl.bufferData(this.gl.ARRAY_BUFFER, new Float32Array(positions), this.gl.STATIC_DRAW)
 
+    this.translation = [200, 150]
+    this.angleInRadians = 0
+    this.scale = [1, 1]    
 
-    this.render()
+    this.drawScene()
   }
 
-  render() {
+  drawScene() {
     resizeCanvasToDisplaySize(this.gl.canvas)
     
     // Tell WebGL how to convert from clip space to pixels
@@ -145,22 +142,29 @@ class App {
     // set the resolution
     this.gl.uniform2f(this.resolutionUniformLocation, this.gl.canvas.width, this.gl.canvas.height)
 
-    let translation = [200, 150]
-    let angleInRadians = 0
-    let scale = [1, 1]    
-
+    // Compute the matrix
     let matrix: any = Projection(this.canvas.clientWidth, this.canvas.clientHeight)
-    matrix = Translate(matrix, translation[0], translation[1])
-    matrix = Rotate(matrix, angleInRadians)
-    matrix = Scale(matrix, scale[0], scale[1])
+    matrix = Translate(matrix, this.translation[0], this.translation[1])
+    matrix = Rotate(matrix, this.angleInRadians)
+    matrix = Scale(matrix, this.scale[0], this.scale[1])   
+    
 
-
+    // Set the matrix.
     this.gl.uniformMatrix3fv(this.matrixLocation, false, matrix)
-  
+
+     // Draw the geometry.
+    this.primitiveType = this.gl.TRIANGLES
+    this.offset = 0
+    this.count = 6
+    
+    // Set the geometry.
+    this.setGeometry(this.gl)
+
+    // Set the colors.
+    this.setColors(this.gl)
   }
 
-  setGeometry(gl: WebGLRenderingContext) {
-
+  setGeometry(gl: WebGLRenderingContext) {    
     gl.bufferData(
       gl.ARRAY_BUFFER,
       new Float32Array([
@@ -176,6 +180,7 @@ class App {
     gl.uniform4f(this.colorUniformLocation, Math.random(), Math.random(), Math.random(), 1)
 
     gl.drawArrays(this.primitiveType, this.offset, this.count)
+    
   }
 
 
@@ -191,17 +196,18 @@ class App {
     var g2 = Math.random()
    
     gl.bufferData(
-        gl.ARRAY_BUFFER,
-        new Float32Array(
-          [ r1, b1, g1, 1,
-            r1, b1, g1, 1,
-            r1, b1, g1, 1,
-            r2, b2, g2, 1,
-            r2, b2, g2, 1,
-            r2, b2, g2, 1]),
-        gl.STATIC_DRAW)
+      gl.ARRAY_BUFFER,
+      new Float32Array(
+        [ r1, b1, g1, 1,
+          r1, b1, g1, 1,
+          r1, b1, g1, 1,
+          r2, b2, g2, 1,
+          r2, b2, g2, 1,
+          r2, b2, g2, 1
+        ]),
+      gl.STATIC_DRAW
+    )
   }
-
 }
 
 new App()
